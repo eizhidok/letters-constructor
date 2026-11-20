@@ -43,6 +43,18 @@ shadow.innerHTML = `<style>
 
 .lc .main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
 @media (max-width: 900px) { .lc .main { grid-template-columns: 1fr; } }
+/* телефон: Имя → 3D → Цвет буквы → Высота и поверхность → Декор → Опции → Итого */
+@media (max-width: 900px) {
+  .lc .main { gap: 12px; }
+  .lc .main > .panel { display: contents; }  /* сильнее общего .panel ниже по файлу */
+  .lc .panel > :nth-child(1) { order: 1; }
+  .lc .stage { order: 2; }
+  .lc .panel > :nth-child(3) { order: 3; }
+  .lc .panel > :nth-child(2) { order: 4; }
+  .lc .panel > :nth-child(4) { order: 5; }
+  .lc .panel > :nth-child(5) { order: 6; }
+  .lc .panel > :nth-child(6) { order: 7; }
+}
 
 .lc .stage { position: sticky; top: 12px; border-radius: 26px; overflow: hidden; aspect-ratio: 4 / 3;
   background: radial-gradient(120% 90% at 30% 15%, var(--stage-a), var(--stage-b)); }
