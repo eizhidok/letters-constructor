@@ -143,7 +143,7 @@ shadow.innerHTML = `<style>
       <section class="card">
         <h2>Имя</h2>
         <input class="name-input" id="lc-name" maxlength="12" autocomplete="off" spellcheck="false" placeholder="ИМЯ" value="ИМЯ" aria-label="Имя">
-        <div class="small" id="lc-name-note">Русские буквы и цифры, до 12 знаков</div>
+        <div class="small" id="lc-name-note">Русские и латинские буквы, цифры — до 12 знаков</div>
       </section>
 
       <section class="card">
@@ -173,6 +173,7 @@ shadow.innerHTML = `<style>
         <div class="row">
           <button class="btn" id="lc-random">🎲 Случайная расцветка</button>
         </div>
+        <label class="check small" id="lc-heart-row" hidden><input type="checkbox" id="lc-heart"> Сердечко внутри вместо круглой дырочки</label>
         <div id="lc-sel-size" hidden>
           <div class="small" style="margin-bottom:6px">Высота этой буквы</div>
           <div class="seg" id="lc-seg-size-one"></div>
@@ -259,7 +260,11 @@ const DECOR = {
   cone:  {name: "Конус",     icon: "▲", shapes: ["cone_body", "cone_stripes"]},
 };
 const ABC = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
-const charShape = ch => /\d/.test(ch) ? "d" + ch : "ru_" + String(ABC.indexOf(ch) + 1).padStart(2, "0");
+const LAT = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const HEART_O = { "О": "ru_16h", "O": "la_Oh" };   // О и O можно заказать с сердечком внутри
+const itemShape = it => it.heart && HEART_O[it.ch] ? HEART_O[it.ch] : charShape(it.ch);
+const isChar = c => ABC.includes(c) || LAT.includes(c) || /\d/.test(c);
+const charShape = ch => /\d/.test(ch) ? "d" + ch : LAT.includes(ch) ? "la_" + ch : "ru_" + String(ABC.indexOf(ch) + 1).padStart(2, "0");
 
 // ======================= СОСТОЯНИЕ =======================
 // item: {kind: "char", ch, colors: [id], surface} | {kind: "star"|"heart"|"cone", colors: [id, id?], surface}
@@ -267,7 +272,7 @@ const S = { items: [], size: 10, surface: "plain", hole: false, magnets: false, 
 const newItem = (kind, ch) => ({ kind, ch, colors: kind === "cone" ? ["orange", "white"] : ["white"], surface: null, size: null });
 
 function setName(raw) {
-  const clean = [...raw.toUpperCase().replace(/Ё/g, "Ё")].filter(c => ABC.includes(c) || /\d/.test(c)).slice(0, MAX_CHARS);
+  const clean = [...raw.toUpperCase().replace(/Ё/g, "Ё")].filter(isChar).slice(0, MAX_CHARS);
   const old = S.items.filter(i => i.kind === "char");
   // сохраняем настройки совпадающего начала и конца имени
   let p = 0; while (p < old.length && p < clean.length && old[p].ch === clean[p]) p++;
@@ -286,7 +291,7 @@ function setName(raw) {
   // поле показывает ровно то, что пойдёт в заказ: лишние знаки и всё сверх 12 не вводятся
   const inp = $("name"), val = clean.join("");
   if (inp.value !== val) inp.value = val;
-  $("name-note").textContent = `Русские буквы и цифры · ${clean.length} из ${MAX_CHARS}`;
+  $("name-note").textContent = `Русские и латинские буквы, цифры · ${clean.length} из ${MAX_CHARS}`;
 }
 
 const isSilk = it => it.colors.some(c => COL[c].silk);
@@ -389,7 +394,7 @@ const GAP = 7, H_MID = 33.5;
 let buildToken = 0, fitWidth = 0, fitTop = 80;
 async function rebuild(refit) {
   const token = ++buildToken;
-  const need = S.items.flatMap(it => it.kind === "char" ? [charShape(it.ch)] : DECOR[it.kind].shapes);
+  const need = S.items.flatMap(it => it.kind === "char" ? [itemShape(it)] : DECOR[it.kind].shapes);
   const loading = $("loading");
   const t = setTimeout(() => loading.style.opacity = 1, 150);
   let geos;
@@ -402,7 +407,7 @@ async function rebuild(refit) {
   let x = 0, gi = 0;
   S.items.forEach((it, idx) => {
     const grp = new THREE.Group(); grp.userData.idx = idx;
-    const ids = it.kind === "char" ? [charShape(it.ch)] : DECOR[it.kind].shapes;
+    const ids = it.kind === "char" ? [itemShape(it)] : DECOR[it.kind].shapes;
     const bb = new THREE.Box3();
     ids.forEach((id, k) => {
       const g = geos[gi++];
@@ -543,6 +548,8 @@ function renderUI() {
   $("random").disabled = !S.items.length;
   $("sel-surface").hidden = !it;
   $("sel-size").hidden = !it;
+  $("heart-row").hidden = !(it && it.kind === "char" && HEART_O[it.ch]);
+  if (it) $("heart").checked = !!it.heart;
   if (it) segButtons($("seg-size-one"), SIZES.filter(s => ENABLED_SIZES.includes(s)).map(s => ({ id: s, html: `${s} см` })),
     sizeOf(it), s => { it.size = s === S.size ? null : s; rebuild(); renderUI(); });
   if (it) segButtons($("seg-surface-one"), surfOpts(), wantSurf(it), s => { it.surface = s === S.surface ? null : s; rebuild(); renderUI(); });
@@ -610,6 +617,7 @@ function removeSel() {
   rebuild(); renderUI();
 }
 $("cone-tabs").onclick = e => { const b = e.target.closest("button"); if (b) { S.part = +b.dataset.part; renderUI(); } };
+$("heart").onchange = e => { const it = S.items[S.sel]; if (it) { it.heart = e.target.checked; rebuild(); renderUI(); } };
 $("hole").onchange = e => { S.hole = e.target.checked; renderUI(); };
 $("magnets").onchange = e => { S.magnets = e.target.checked; renderUI(); };
 $("name").addEventListener("input", e => { setName(e.target.value); rebuild(); renderUI(); });
@@ -620,7 +628,8 @@ function orderText() {
   const word = `«${S.items.filter(i => i.kind === "char").map(i => i.ch).join("")}»` + (decor.length ? " + " + decor.join(", ") : "");
   const surfName = id => SURFACES.find(s => s.id === id).name.toLowerCase();
   const parts = S.items.map(it => {
-    const head = it.kind === "char" ? it.ch : DECOR[it.kind].name.toLowerCase();
+    const head = it.kind === "char" ? it.ch + (LAT.includes(it.ch) ? " (лат.)" : "") + (it.heart && HEART_O[it.ch] ? " с сердечком" : "")
+      : DECOR[it.kind].name.toLowerCase();
     const cols = it.colors.map(c => `${COL[c].name} (${COL[c].fil})`).join(" / ");
     const surf = surfOf(it), extra = mixedSurf() ? `, ${surfName(surf)}` : "";
     return `${head}${mixedSize() ? ` (${sizeOf(it)} см)` : ""} — ${cols}${extra}`;
