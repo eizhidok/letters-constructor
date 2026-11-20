@@ -109,8 +109,8 @@ shadow.innerHTML = `<style>
 <div class="lc">
 <div class="wrap">
   <header>
-    <h1>Имя из <span>пухлых</span> букв</h1>
-    <p class="lead">Введите имя, нажмите на букву и выберите цвет. Модель можно повернуть.</p>
+    <h1>Введите имя, нажмите на букву и выберите цвет.</h1>
+    <p class="lead">Модель можно повернуть.</p>
   </header>
   <div class="main">
     <div class="stage" id="lc-stage">
