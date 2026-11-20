@@ -48,7 +48,11 @@ shadow.innerHTML = `<style>
   .lc .main { gap: 12px; }
   .lc .main > .panel { display: contents; }  /* сильнее общего .panel ниже по файлу */
   .lc .panel > :nth-child(1) { order: 1; }
-  .lc .stage { order: 2; }
+  /* 3D прилипает к верху экрана и едет вместе со скроллом, пока листаешь настройки */
+  .lc .main > .stage { order: 2; position: sticky; top: 0; z-index: 5; aspect-ratio: auto; height: min(78vw, 40vh);
+    box-shadow: 0 10px 18px -12px rgba(40, 20, 50, .35); }
+  /* вертикальный свайп по модели листает страницу, горизонтальный — крутит буквы */
+  .lc .main > .stage canvas { touch-action: pan-y; }
   .lc .panel > :nth-child(3) { order: 3; }
   .lc .panel > :nth-child(2) { order: 4; }
   .lc .panel > :nth-child(4) { order: 5; }
